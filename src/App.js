@@ -7,7 +7,7 @@ function App() {
     const [universidadId, setUniversidadId] = useState('');
 
     useEffect(() => {
-        axios.get('http://localhost:8000/universidades/')
+        axios.get('https://hs1s.onrender.com/universidades/')
             .then(response => setUniversidades(response.data.universidades))
             .catch(error => console.error(error));
     }, []);
@@ -18,7 +18,7 @@ function App() {
         formData.append('file', file);
 
         try {
-            await axios.post(`http://localhost:8000/documentos/?universidad_id=${universidadId}`, formData, {
+            await axios.post(`https://hs1s.onrender.com/?universidad_id=${universidadId}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -31,7 +31,7 @@ function App() {
 
     const fetchDocumentos = async () => {
         try {
-            const response = await axios.get(`http://localhost:8000/documentos/${universidadId}`);
+            const response = await axios.get(`https://hs1s.onrender.com/documentos/${universidadId}`);
             setDocumentos(response.data.documentos);
         } catch (error) {
             console.error(error);

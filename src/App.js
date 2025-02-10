@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+
 function App() {
     const [universidades, setUniversidades] = useState([]);
     const [documentos, setDocumentos] = useState([]);
@@ -40,7 +41,7 @@ function App() {
 
     return (
         <div>
-            <h1>Gestión de Documentos</h1>
+            <h1>Gestión de Documentoss</h1>
             <div>
                 <label>Seleccione una universidad:</label>
                 <select onChange={(e) => setUniversidadId(e.target.value)}>

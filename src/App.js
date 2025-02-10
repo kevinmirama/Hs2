@@ -19,11 +19,11 @@ function App() {
         formData.append('file', file);
 
         try {
-            await axios.post(`https://hs1s.onrender.com/?universidad_id=${universidadId}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+          await axios.post(`https://hs1s.onrender.com/documentos/?universidad_id=${universidadId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
             alert('Documento subido con éxito');
         } catch (error) {
             console.error(error);

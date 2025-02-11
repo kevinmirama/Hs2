@@ -9,7 +9,7 @@ function App() {
     const [error, setError] = useState(null);
 
     // Configuración base de axios
-    axios.defaults.baseURL = 'https://hs1-1.onrender.com';
+    axios.defaults.baseURL = 'https://hs1-2.onrender.com';
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
     axios.defaults.timeout = 10000; // 10 segundos de timeout
 

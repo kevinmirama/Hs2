@@ -6,83 +6,107 @@ function App() {
     const [documentos, setDocumentos] = useState([]);
     const [selectedUniversidad, setSelectedUniversidad] = useState('');
     const [loading, setLoading] = useState(false);
-    const [mensaje, setMensaje] = useState('');
+    const [error, setError] = useState(null);
 
-    // URL correcta de la API desplegada
-    const API_URL = 'https://hs1-1.onrender.com';
+    const API_URL = 'https://hs1-l0b3.onrender.com';
 
-    // Cargar universidades al inicio
     useEffect(() => {
         cargarUniversidades();
     }, []);
 
-    // Cargar documentos cuando se selecciona una universidad
-    useEffect(() => {
-        if (selectedUniversidad) {
-            cargarDocumentos();
-        }
-    }, [selectedUniversidad]);
-
     const cargarUniversidades = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const response = await axios.get(`${API_URL}/universidades/`);
-            console.log('Universidades cargadas:', response.data);
-            setUniversidades(response.data.universidades);
-        } catch (error) {
-            console.error('Error al cargar universidades:', error);
-            setMensaje('Error al cargar universidades');
-        }
-    };
-
-    const cargarDocumentos = async () => {
-        try {
-            const response = await axios.get(`${API_URL}/documentos/${selectedUniversidad}`);
-            console.log('Documentos cargados:', response.data);
-            setDocumentos(response.data.documentos);
-        } catch (error) {
-            console.error('Error al cargar documentos:', error);
-            setMensaje('Error al cargar documentos');
+            const response = await axios.get(`${API_URL}/universidades/`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+            console.log('Respuesta de universidades:', response.data);
+            if (response.data && response.data.universidades) {
+                setUniversidades(response.data.universidades);
+            }
+        } catch (err) {
+            console.error('Error detallado:', err);
+            setError(err.message || 'Error al cargar universidades');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file || !selectedUniversidad) {
-            setMensaje('Por favor seleccione una universidad y un archivo');
+            setError('Por favor seleccione una universidad y un archivo');
             return;
         }
 
         setLoading(true);
+        setError(null);
         const formData = new FormData();
         formData.append('file', file);
 
         try {
-            await axios.post(
-                `${API_URL}/documentos/?universidad_id=${selectedUniversidad}`, 
+            const response = await axios.post(
+                `${API_URL}/documentos/?universidad_id=${selectedUniversidad}`,
                 formData,
                 {
                     headers: {
-                        'Content-Type': 'multipart/form-data'
+                        'Content-Type': 'multipart/form-data',
+                        'Accept': 'application/json'
                     }
                 }
             );
-            setMensaje('Documento subido exitosamente');
-            cargarDocumentos(); // Recargar la lista de documentos
-        } catch (error) {
-            console.error('Error al subir documento:', error);
-            setMensaje('Error al subir el documento');
+            console.log('Respuesta de subida:', response.data);
+            cargarDocumentos();
+        } catch (err) {
+            console.error('Error al subir:', err);
+            setError('Error al subir el documento: ' + (err.message || ''));
         } finally {
             setLoading(false);
         }
     };
 
+    const cargarDocumentos = async () => {
+        if (!selectedUniversidad) return;
+        
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await axios.get(`${API_URL}/documentos/${selectedUniversidad}`);
+            console.log('Respuesta de documentos:', response.data);
+            if (response.data && response.data.documentos) {
+                setDocumentos(response.data.documentos);
+            }
+        } catch (err) {
+            console.error('Error al cargar documentos:', err);
+            setError('Error al cargar documentos');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedUniversidad) {
+            cargarDocumentos();
+        }
+    }, [selectedUniversidad]);
+
     return (
         <div className="container mx-auto p-4">
             <h1 className="text-2xl font-bold mb-4">Sistema de Gestión de Documentos</h1>
             
-            {mensaje && (
-                <div className="bg-blue-100 border-blue-500 text-blue-700 px-4 py-3 rounded mb-4">
-                    {mensaje}
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    {error}
+                </div>
+            )}
+
+            {loading && (
+                <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+                    Cargando...
                 </div>
             )}
 
@@ -96,7 +120,7 @@ function App() {
                     <option value="">Seleccione una universidad...</option>
                     {universidades.map(univ => (
                         <option key={univ[0]} value={univ[0]}>
-                            {univ[1]} - {univ[2]}
+                            {univ[1]}
                         </option>
                     ))}
                 </select>
@@ -110,6 +134,9 @@ function App() {
                     disabled={loading || !selectedUniversidad}
                     className="w-full p-2 border rounded"
                 />
+                <p className="text-sm text-gray-600 mt-1">
+                    {!selectedUniversidad && "Seleccione una universidad primero"}
+                </p>
             </div>
 
             <div className="mb-6">

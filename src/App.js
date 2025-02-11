@@ -9,7 +9,7 @@ function App() {
     const [mensaje, setMensaje] = useState('');
 
     // URL correcta de la API desplegada
-    const API_URL = 'https://hs1-l0b3.onrender.com';
+    const API_URL = 'https://hs1-1.onrender.com';
 
     // Cargar universidades al inicio
     useEffect(() => {

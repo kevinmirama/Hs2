@@ -8,40 +8,61 @@ function App() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const API_URL = 'https://hs1-l0b3.onrender.com';
+    // Configuración base de axios
+    axios.defaults.baseURL = 'https://hs1-1.onrender.com';
+    axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
+    axios.defaults.timeout = 10000; // 10 segundos de timeout
 
     useEffect(() => {
-        cargarUniversidades();
+        const fetchUniversidades = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // Primero verificamos si la API está funcionando
+                const healthCheck = await axios.get('/', { 
+                    validateStatus: function (status) {
+                        return status < 500; // Acepta cualquier estado que no sea error del servidor
+                    }
+                });
+                console.log('API Health Check:', healthCheck.data);
+
+                // Si la API responde, intentamos obtener las universidades
+                const response = await axios.get('/universidades/', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log('Datos de universidades:', response.data);
+                
+                if (response.data && response.data.universidades) {
+                    setUniversidades(response.data.universidades);
+                }
+            } catch (err) {
+                console.error('Error completo:', err);
+                if (err.code === 'ECONNABORTED') {
+                    setError('La conexión tardó demasiado. Por favor, intente nuevamente.');
+                } else if (err.code === 'ERR_NETWORK') {
+                    setError('No se pudo conectar con el servidor. Por favor, verifique su conexión a internet.');
+                } else {
+                    setError(`Error al cargar universidades: ${err.message}`);
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUniversidades();
     }, []);
 
-    const cargarUniversidades = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await axios.get(`${API_URL}/universidades/`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            });
-            console.log('Respuesta de universidades:', response.data);
-            if (response.data && response.data.universidades) {
-                setUniversidades(response.data.universidades);
-            }
-        } catch (err) {
-            console.error('Error detallado:', err);
-            setError(err.message || 'Error al cargar universidades');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleFileUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file || !selectedUniversidad) {
-            setError('Por favor seleccione una universidad y un archivo');
+        if (!selectedUniversidad) {
+            setError('Por favor seleccione una universidad primero');
             return;
         }
+
+        const file = event.target.files[0];
+        if (!file) return;
 
         setLoading(true);
         setError(null);
@@ -50,20 +71,22 @@ function App() {
 
         try {
             const response = await axios.post(
-                `${API_URL}/documentos/?universidad_id=${selectedUniversidad}`,
+                `/documentos/?universidad_id=${selectedUniversidad}`,
                 formData,
                 {
                     headers: {
-                        'Content-Type': 'multipart/form-data',
-                        'Accept': 'application/json'
-                    }
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    timeout: 30000 // 30 segundos para subida de archivos
                 }
             );
             console.log('Respuesta de subida:', response.data);
             cargarDocumentos();
         } catch (err) {
             console.error('Error al subir:', err);
-            setError('Error al subir el documento: ' + (err.message || ''));
+            setError(err.code === 'ERR_NETWORK' 
+                ? 'Error de conexión al subir el archivo. Por favor, intente nuevamente.' 
+                : 'Error al subir el documento');
         } finally {
             setLoading(false);
         }
@@ -73,16 +96,17 @@ function App() {
         if (!selectedUniversidad) return;
         
         setLoading(true);
-        setError(null);
         try {
-            const response = await axios.get(`${API_URL}/documentos/${selectedUniversidad}`);
-            console.log('Respuesta de documentos:', response.data);
+            const response = await axios.get(`/documentos/${selectedUniversidad}`);
+            console.log('Documentos cargados:', response.data);
             if (response.data && response.data.documentos) {
                 setDocumentos(response.data.documentos);
             }
         } catch (err) {
             console.error('Error al cargar documentos:', err);
-            setError('Error al cargar documentos');
+            setError(err.code === 'ERR_NETWORK' 
+                ? 'Error de conexión al cargar documentos' 
+                : 'Error al cargar los documentos');
         } finally {
             setLoading(false);
         }
@@ -99,8 +123,9 @@ function App() {
             <h1 className="text-2xl font-bold mb-4">Sistema de Gestión de Documentos</h1>
             
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    {error}
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+                    <strong className="font-bold">Error: </strong>
+                    <span className="block sm:inline">{error}</span>
                 </div>
             )}
 
@@ -116,6 +141,7 @@ function App() {
                     className="w-full p-2 border rounded"
                     value={selectedUniversidad}
                     onChange={(e) => setSelectedUniversidad(e.target.value)}
+                    disabled={loading}
                 >
                     <option value="">Seleccione una universidad...</option>
                     {universidades.map(univ => (
@@ -134,9 +160,11 @@ function App() {
                     disabled={loading || !selectedUniversidad}
                     className="w-full p-2 border rounded"
                 />
-                <p className="text-sm text-gray-600 mt-1">
-                    {!selectedUniversidad && "Seleccione una universidad primero"}
-                </p>
+                {!selectedUniversidad && (
+                    <p className="text-red-600 text-sm mt-1">
+                        Seleccione una universidad primero
+                    </p>
+                )}
             </div>
 
             <div className="mb-6">
